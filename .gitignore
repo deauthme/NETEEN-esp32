@@ -1,0 +1,30 @@
+# Arduino build artifacts
+build/
+*.bin
+*.elf
+*.hex
+*.map
+*.d
+*.o
+*.ino.bin
+*.ino.elf
+*.ino.map
+*.ino.partitions.bin
+*.ino.with_bootloader.bin
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# macOS
+.DS_Store
+._*
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+*.swp
+*.swo
