@@ -2,8 +2,6 @@
 
 Standalone ESP32 fake access point + captive portal toolkit for authorized WiFi security testing. Runs fully offline with a joystick-controlled UI.
 
-First public release of **NETEEN** — a standalone ESP32-based fake access point + captive portal toolkit for authorized WiFi security testing.
-
 Runs completely offline on a single ESP32 dev board. No Raspberry Pi, no laptop, no internet backhaul needed.
 
 ---
