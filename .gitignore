@@ -6,11 +6,6 @@ build/
 *.map
 *.d
 *.o
-*.ino.bin
-*.ino.elf
-*.ino.map
-*.ino.partitions.bin
-*.ino.with_bootloader.bin
 
 # VS Code
 .vscode/
@@ -28,3 +23,10 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+
+# Arduino IDE
+*.ino.bin
+*.ino.elf
+*.ino.map
+*.ino.with_bootloader.bin
+*.ino.partitions.bin
