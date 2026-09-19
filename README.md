@@ -1,4 +1,6 @@
-# NETEEN v1.0.0
+# NETEEN-esp32
+
+Standalone ESP32 fake access point + captive portal toolkit for authorized WiFi security testing. Runs fully offline with a joystick-controlled UI.
 
 First public release of **NETEEN** — a standalone ESP32-based fake access point + captive portal toolkit for authorized WiFi security testing.
 
