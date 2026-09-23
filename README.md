@@ -62,31 +62,174 @@ Optional: buzzer, RGB LED.
 
 ---
 
-## Libraries
+## Quick Start (Terminal Only — No Arduino IDE Needed)
 
-Install via Arduino Library Manager:
+Everything below works on **macOS** and **Linux**. Windows users can use WSL or adjust the serial port path (`/dev/ttyUSB0` instead of `/dev/cu.usbserial-XXXX`).
 
-- `Adafruit SSD1306`
-- `Adafruit GFX Library`
+### 1. Install `arduino-cli`
 
-Built-in with ESP32 core (no extra install):
+**macOS (Homebrew):**
+```bash
+brew install arduino-cli
+```
 
-- `WiFi`
-- `WebServer`
-- `DNSServer`
-- `LittleFS`
-- `Wire`
+**Linux (official install script):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+sudo mv bin/arduino-cli /usr/local/bin/
+```
 
----
+Verify:
+```bash
+arduino-cli version
+```
 
-## Build & Flash
+### 2. Install the ESP32 board core
+
+```bash
+arduino-cli config init
+arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli core update-index
+arduino-cli core install esp32:esp32
+```
+
+This downloads ~500 MB on first install.
+
+### 3. Install the required libraries
+
+```bash
+arduino-cli lib install "Adafruit SSD1306"
+arduino-cli lib install "Adafruit GFX Library"
+```
+
+`WiFi`, `WebServer`, `DNSServer`, `LittleFS` and `Wire` ship with the ESP32 core.
+
+### 4. Get the source code
+
+**Clone the repo:**
+```bash
+git clone https://github.com/deauthme/NETEEN-esp32.git
+cd NETEEN-esp32
+```
+
+**Or create the sketch folder manually and paste `NETEEN.ino` into it:**
+```bash
+mkdir -p ~/Documents/Arduino/NETEEN-esp32
+nano ~/Documents/Arduino/NETEEN-esp32/NETEEN-esp32.ino
+# paste the code, save with Ctrl+O, Enter, exit with Ctrl+X
+```
+
+> **Important:** the folder name must match the `.ino` filename. If you clone the repo, either rename `NETEEN.ino` → `NETEEN-esp32.ino` (and keep the folder as `NETEEN-esp32`), or compile from the folder name as-is.
+
+### 5. Find your board's serial port
+
+Plug in the ESP32 via USB, then:
+
+```bash
+arduino-cli board list
+```
+
+Look for something like:
+
+```
+/dev/cu.usbserial-0001   serial   Serial Port (USB)   Unknown
+/dev/cu.wchusbserial-XXXX
+```
+
+On Linux it will be `/dev/ttyUSB0` or `/dev/ttyACM0`.
+
+If nothing shows up:
+- **macOS**: you may need a driver for the USB-serial chip (CH340, CP2102, FTDI). Install with `brew install --cask wch-ch34x-usb-serial-driver` for CH340-based boards.
+- **Linux**: add your user to `dialout`: `sudo usermod -a -G dialout $USER`, then log out and back in.
+
+### 6. Compile
 
 ```bash
 arduino-cli compile --fqbn esp32:esp32:esp32 .
-arduino-cli upload -p /dev/cu.usbserial-XXXX --fqbn esp32:esp32:esp32 .
 ```
 
-Or just open `NETEEN.ino` in the Arduino IDE, select **ESP32 Dev Module**, and click **Upload**.
+Or with a fully-qualified folder path:
+
+```bash
+arduino-cli compile --fqbn esp32:esp32:esp32 ~/Documents/Arduino/NETEEN-esp32
+```
+
+You should see something like:
+
+```
+Sketch uses 1059536 bytes (80%) of program storage space.
+Global variables use 54104 bytes (16%) of dynamic memory.
+```
+
+### 7. Upload to the board
+
+Replace `/dev/cu.usbserial-0001` with your actual port:
+
+```bash
+arduino-cli upload -p /dev/cu.usbserial-0001 --fqbn esp32:esp32:esp32 .
+```
+
+If upload fails with `Failed to connect to ESP32: Timed out waiting for packet header`:
+- hold the **BOOT** button on the board
+- press and release **EN** (reset)
+- release **BOOT**
+- rerun the upload command
+
+### 8. Open the serial monitor
+
+```bash
+arduino-cli monitor -p /dev/cu.usbserial-0001 -c baudrate=115200,dtr=off,rts=off
+```
+
+The `dtr=off,rts=off` part is **critical** — without it the ESP32 stays in bootloader mode and you only see garbage. If your board resets itself constantly, this is the fix.
+
+Exit the monitor with **Ctrl+C**.
+
+### 9. One-liner compile + upload + monitor
+
+Once everything works, you can chain commands:
+
+```bash
+arduino-cli compile --fqbn esp32:esp32:esp32 . && \
+arduino-cli upload -p /dev/cu.usbserial-0001 --fqbn esp32:esp32:esp32 . && \
+arduino-cli monitor -p /dev/cu.usbserial-0001 -c baudrate=115200,dtr=off,rts=off
+```
+
+### 10. Rebuild after editing code
+
+Just rerun step 9. If you only changed a few lines, the incremental build is fast (~5 seconds).
+
+To force a clean rebuild:
+
+```bash
+arduino-cli compile --fqbn esp32:esp32:esp32 --clean .
+```
+
+### Common issues
+
+| Problem | Fix |
+|---------|-----|
+| `Platform 'esp32:esp32' not found` | Run `arduino-cli core install esp32:esp32` again |
+| `error: 'rawDataPtr' has no member` (IRremote) | Library API changed — this project doesn't use IRremote, ensure you cloned this repo not an older variant |
+| `Failed to connect to ESP32` | Hold BOOT, tap EN, release BOOT, retry upload |
+| Serial shows only `?????` or garbage | Add `dtr=off,rts=off` to the monitor command |
+| OLED stays black | Check I2C address — some modules use `0x3D` instead of `0x3C`; edit `OLED_ADDR` in the sketch |
+| `magick: unable to read font` | Not related to this project — you're trying to rasterize an SVG, use a browser or `rsvg-convert` instead |
+| Wrong board detected | Force upload: add `--board-options UploadSpeed=115200` to the upload command |
+
+---
+
+## Build & Flash (Arduino IDE)
+
+If you prefer the GUI:
+
+1. Install the ESP32 board package in **Boards Manager**
+2. Install `Adafruit SSD1306` and `Adafruit GFX Library` in **Library Manager**
+3. Open `NETEEN-esp32.ino`
+4. Select **Tools → Board → ESP32 Dev Module**
+5. Select **Tools → Port → /dev/cu.usbserial-XXXX**
+6. Click **Upload**
+7. Open **Tools → Serial Monitor**, baud rate `115200`
 
 ---
 
