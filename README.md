@@ -269,6 +269,127 @@ Long values wrap at 60 chars, so you can copy-paste straight from a serial termi
 
 ---
 
+---
+
+## Troubleshooting
+
+### `Can't open sketch: main file missing`
+
+The `.ino` filename must **exactly match** the folder name. If you cloned an older version where the file is called `NETEEN.ino` but the folder is `NETEEN-esp32`, rename it:
+
+```bash
+mv NETEEN.ino NETEEN-esp32.ino
+```
+
+Or, if you have the folder in the wrong place:
+
+```bash
+# move it to the standard Arduino sketches folder
+mv ~/NETEEN-esp32 ~/Documents/Arduino/NETEEN-esp32
+
+# rename the sketch to match
+cd ~/Documents/Arduino/NETEEN-esp32
+mv NETEEN.ino NETEEN-esp32.ino
+
+# now compile
+arduino-cli compile --fqbn esp32:esp32:esp32 .
+```
+
+### `Error: You have not agreed to the Xcode license`
+
+Only on macOS, before installing `arduino-cli` via Homebrew:
+
+```bash
+sudo xcodebuild -license accept
+```
+
+If `xcodebuild` isn't installed at all:
+
+```bash
+xcode-select --install
+sudo xcodebuild -license accept
+brew install arduino-cli
+```
+
+### `Platform 'esp32:esp32' not found`
+
+Reinstall the core:
+
+```bash
+arduino-cli core update-index
+arduino-cli core install esp32:esp32
+```
+
+### `Failed to connect to ESP32: Timed out waiting for packet header`
+
+The board didn't enter bootloader mode. Manual sequence:
+
+1. Hold the **BOOT** button on the ESP32
+2. Press and release the **EN** (reset) button while holding BOOT
+3. Release **BOOT**
+4. Rerun the upload command
+
+### Serial monitor shows only `?????` or garbage
+
+The DTR/RTS lines are holding the chip in reset. Always pass `dtr=off,rts=off`:
+
+```bash
+arduino-cli monitor -p /dev/cu.usbserial-0001 -c baudrate=115200,dtr=off,rts=off
+```
+
+### OLED stays black
+
+Some SSD1306 modules use I2C address `0x3D` instead of `0x3C`. Open `NETEEN-esp32.ino` and change:
+
+```cpp
+#define OLED_ADDR 0x3C   // try 0x3D if screen stays black
+```
+
+If still black, run an I2C scanner to find the address:
+
+```cpp
+#include <Wire.h>
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+  for (byte a = 1; a < 127; a++) {
+    Wire.beginTransmission(a);
+    if (Wire.endTransmission() == 0) {
+      Serial.printf("I2C device at 0x%02X\n", a);
+    }
+  }
+}
+void loop() {}
+```
+
+### `magick: unable to read font`
+
+This is unrelated to NETEEN — you're trying to rasterize an SVG with ImageMagick and it can't find a font. Either open the SVG in a browser and take a screenshot, or use a proper SVG renderer:
+
+```bash
+brew install librsvg
+rsvg-convert input.svg -o output.png
+```
+
+### Upload works but device keeps resetting
+
+Power issue. The ESP32 draws ~150 mA peaks, and cheap USB cables or hubs can't deliver it. Try:
+
+- different USB cable (short, thick, data-capable — not a charge-only cable)
+- powered USB hub
+- direct port on the laptop instead of a hub
+- if powered from an external source, ensure a stable 5V at >500 mA
+
+### Wrong board detected / FQBN mismatch
+
+Force upload speed down:
+
+```bash
+arduino-cli upload -p /dev/cu.usbserial-0001 \
+  --fqbn esp32:esp32:esp32 \
+  --board-options UploadSpeed=115200 .
+```
+
 ## Disclaimer
 
 **FOR EDUCATIONAL AND AUTHORIZED SECURITY TESTING ONLY.**
